@@ -3,5 +3,10 @@
 # define file paths:
 wav_directory: 'L:/WhaleMoanDetector/labeled_data/wav/SOCAL34N'
 txt_file_path: 'L:/WhaleMoanDetector_predictions/SOCAL34N/SOCAL34N_raw_detections.txt'
-model_path: 'L:/WhaleMoanDetector/models/WhaleMoanDetector_12_11_24_12_best.pth'
+model_path: 'C:/Users/Shane/Documents/Classes/Scripps/models/WMD_BEST.pth'
 CalCOFI_flag: False # True or False
+
+model_folder: 'C:/Users/Shane/Documents/Classes/Scripps/models'
+labeled_data_folder: 'C:/Users/Shane/Documents/Classes/Scripps/train_val_test_annotations'
+evaluation_folder: 'C:/Users/Shane/Documents/Classes/Scripps/evaluation'
+

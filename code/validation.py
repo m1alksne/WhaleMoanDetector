@@ -12,6 +12,9 @@ import torchvision
 import torch
 from torchvision.ops import box_iou
 import os
+import tqdm
+from sklearn.metrics import auc
+import numpy as np
 
 
 
@@ -106,10 +109,8 @@ import os
        
        
        
-def validation(vald1, device, model, epoch_train_loss, epochs, precision_recall_output):
+def validation(val_loader, device, model, categories, iou_threshold=0.1):
     # Constants
-    iou_threshold = 0.1
-    categories = {'D': 1, '40Hz': 2, '20Hz': 3, 'A': 4, 'B': 5}
     score_thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     
     # Initialize metrics storage with integer keys
@@ -118,8 +119,8 @@ def validation(vald1, device, model, epoch_train_loss, epochs, precision_recall_
         for thr in score_thresholds
     }
 
-    # Iterate over the test dataset
-    for data in vald1:
+    # Iterate over the validation  dataset
+    for data in val_loader:
         img = data[0][0].to(device)  # Move the image to the device
         # Check if ground truth boxes or labels are None
         boxes = data[0][1]["boxes"].to(device) if data[0][1] and data[0][1]["boxes"] is not None else torch.empty((0, 4), device=device)
@@ -162,11 +163,17 @@ def validation(vald1, device, model, epoch_train_loss, epochs, precision_recall_
                 for gt_label in labels:
                     all_metrics[score_threshold][gt_label.item()]['fn'] += 1
             
+    precision_list = {f"{category}": [] for category in categories}
+    recall_list = {f"{category}": [] for category in categories}
+
+    precision_recall_output = ""
+            # (
+            # f"\n========== Epoch {epochs} ==========\n"
+            # f"Training Loss: {epoch_train_loss:.4f}\n\n")
+
     # Append new metrics to the output string
     for score_threshold in score_thresholds:
         precision_recall_output += (
-            f"\n========== Epoch {epochs} ==========\n"
-            f"Training Loss: {epoch_train_loss:.4f}\n"
             f"Validation Metrics @ Score Threshold = {score_threshold}\n"
             f"--------------------------------------\n")
 
@@ -177,12 +184,22 @@ def validation(vald1, device, model, epoch_train_loss, epochs, precision_recall_
         
             precision = tp / (tp + fp) if (tp + fp) > 0 else 0
             recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+            precision_list[category_name].append(precision)
+            recall_list[category_name].append(recall)
         
             line = f"{category_name:<12} | Precision: {precision:.4f}  | Recall: {recall:.4f}\n"
             precision_recall_output += line
-            print(line.strip())
+        
+    # calculate AP for each category
+    AP_list = {f"{category}": 0 for category in categories}
+    for category_name in categories:
+        recall_list[category_name].insert(0, 1)
+        precision_list[category_name].insert(0, 0)
+        recall_list[category_name].append(0)
+        precision_list[category_name].append(1)
+        AP_list[category_name] = auc(recall_list[category_name], precision_list[category_name])
 
-    return precision_recall_output
+    return precision_recall_output, AP_list
        
        
        

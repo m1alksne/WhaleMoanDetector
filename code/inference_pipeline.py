@@ -5,6 +5,9 @@ Created on Thu Mar 28 16:41:34 2024
 @author: Michaela Alksne
 
 script to run the required functions in the correct order to make predictions using trained model
+
+NOTE: Untested changes added on 6/25, moving the import model function to the inference_functions script.
+      This should not impact the functionality of this pipeline.
 """
 
 import librosa
@@ -29,8 +32,8 @@ from datetime import datetime, timedelta
 from IPython.display import display
 import csv
 import yaml
-from inference_functions import extract_wav_start, chunk_audio, audio_to_spectrogram, predict_and_save_spectrograms, get_datetime, chunk_audio_from_xwav_raw_headers
-from call_context_filter import call_context_filter
+from inference_functions import *
+from call_context_filter import *
 
 # Load the config file
 with open('config.yaml', 'r') as file:
@@ -60,16 +63,11 @@ window_size = 60
 overlap_size = 0
 time_per_pixel = 0.1  # Since hop_length = sr / 10, this simplifies to 1/10 second per pixel
 
-# Load trained Faster R-CNN model
-model = torchvision.models.detection.fasterrcnn_resnet50_fpn()
-num_classes = 6 # 5 classes plus background
-in_features = model.roi_heads.box_predictor.cls_score.in_features # classification score and number of features (1024 in this case)
+# Loading model
+num_classes = len(label_mapping) + 1 # All desired call types + one background class
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model.roi_heads.box_predictor = FastRCNNPredictor(in_features,num_classes)
-model.load_state_dict(torch.load(model_path, map_location=device))
-model.to(device)
+model = import_RCNN(model_path, num_classes, device)
 model.eval()
-
 
 # Open the TXT file and write headers
 with open(txt_file_path, mode='w', encoding='utf-8') as txtfile:

@@ -29,7 +29,8 @@ from AudioStreamDescriptor import WAVhdr, XWAVhdr
 #from xwav_functions import get_datetime
 from datetime import timedelta
 
-# hepler function uses WAVhdr to read wav file header info and extract wav file start time as a datetime object
+
+# helper function uses WAVhdr to read wav file header info and extract wav file start time as a datetime object
 def extract_wav_start(path):
     
     if path.endswith('.x.wav'):

@@ -2,3 +2,7 @@
 *.png
 *.zip
 *.pth
+.ipnb_checkpoints/
+.vscode/
+__pycache__/
+scratch_code.py
