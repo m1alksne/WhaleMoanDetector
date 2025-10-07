@@ -1,12 +1,29 @@
-# Configuration file to run WhaleMoanDetector and modify file paths
-#Michaela Alksne
-# define file paths:
-wav_directory: 'L:/WhaleMoanDetector/labeled_data/wav/SOCAL34N'
-txt_file_path: 'L:/WhaleMoanDetector_predictions/SOCAL34N/SOCAL34N_raw_detections.txt'
-model_path: 'C:/Users/Shane/Documents/Classes/Scripps/models/WMD_BEST.pth'
-CalCOFI_flag: False # True or False
+# Configuration file with WhaleMoanDetector settings and file paths
+# by Michaela Alksne and Shane Andres
 
-model_folder: 'C:/Users/Shane/Documents/Classes/Scripps/models'
-labeled_data_folder: 'C:/Users/Shane/Documents/Classes/Scripps/train_val_test_annotations'
-evaluation_folder: 'C:/Users/Shane/Documents/Classes/Scripps/evaluation'
+
+categories: {'D': 1, '40Hz': 2, '20Hz': 3, 'A': 4, 'B': 5}   # Call type mappings
+spectrogram:
+  window_size: 60
+  overlap_size: 0
+  min_freq: 10
+  max_freq: 150
+  sec_per_bin: 0.1
+  Hz_per_bin: 1
+  CalCOFI_flag: True
+
+train: 
+  model_folder: 'C:/path/to/your/models'                     # Where your models are stored
+  labeled_data_folder: 'C:/path/to/annotations'              # Where model input detections are pulled from
+  evaluation_folder: 'C:/path/to/eval'                       # Where performance metrics are saved
+
+inference:
+  wav_folder: 'C:/path/to/your/audio/files'                  # Where your .wav files are stored
+  detections_folder: 'C:/path/to/save/results'               # Where to save detection results
+  spectrogram_folder: 'C:/path/to/save/spectrograms'         # Where to save spectrogram images
+  thresholds:  {'A': 0,'B': 0,'D': 0,'20Hz': 0,'40Hz': 0}    # Score thresholds for each category
+  nms_threshold: 0.05                                        # NMS threshold for predicted bounding boxes
+
+
+
 

@@ -8,6 +8,7 @@ make a custom Dataset class for my spectrograms
 for the sonobuoys
 """
 
+import os
 import pandas as pd
 from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
@@ -25,7 +26,13 @@ class AudioDetectionData(Dataset):
     
     def __init__(self, csv_file):
         
-        self.data = pd.read_csv(csv_file)
+        ext = os.path.splitext(csv_file)[1]
+        if ext == '.csv':
+            self.data = pd.read_csv(csv_file)
+        elif ext == '.txt':
+            self.data = pd.read_csv(csv_file, sep='\t')
+        else:
+            raise OSError("Error: unknown dataset file type")
         self.label_mapping = {'D': 1, '40Hz': 2, '20Hz': 3, 'A NE Pacific': 4, 'B NE Pacific': 5}
         
         # Group data by 'ImageName' and aggregate all boxes and labels for each image
@@ -64,7 +71,13 @@ class AudioDetectionData_with_hard_negatives(Dataset):
     
     def __init__(self, csv_file):
         
-        self.data = pd.read_csv(csv_file)
+        ext = os.path.splitext(csv_file)[1]
+        if ext == '.csv':
+            self.data = pd.read_csv(csv_file)
+        elif ext == '.txt':
+            self.data = pd.read_csv(csv_file, sep='\t')
+        else:
+            raise OSError("Error: unknown dataset file type")
         self.label_mapping = {'D': 1, '40Hz': 2, '20Hz': 3, 'A': 4, 'B': 5}
         
         # Group data by 'spectrogram_path' and aggregate all boxes and labels for each image

@@ -1,3 +1,12 @@
+"""
+Created on July 15th 2025
+
+@author: Shane Andres
+
+A collection of functions for initilizing models with their corresponding architectures
+
+"""
+
 import torch
 import torchvision
 from torchvision.models.detection import FasterRCNN

@@ -1,42 +1,22 @@
-# -*- coding: utf-8 -*-
 """
 Created on Sun Feb 11 18:01:09 2024
 
-@author: Michaela Alksne
+@author: Michaela Alksne and Shane Andres
 
-# script to train faster rCNN model 
-# this is for the Sonobuoys!!!!
+Trains an object detection model to identify whale calls in spectrograms.
 
-# the pretrained Faster R-CNN ResNet-50 model that we are going to use expects the input image tensor to be in the form [c, h, w], where:
-
-# c is the number of channels, for RGB images its 3 (which is what I have rn)
-# h is the height of the image
-# w is the width of the image
+NOTE: pretrained Faster R-CNN ResNet-50 models expect the input image tensor to be in the form [c, h, w], where:
+    c is the number of channels
+    h is the height of the image
+    w is the width of the image
 
 """
 
-
-# !!! Imports !!!
-
-import pandas as pd
-from PIL import Image, ImageDraw
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.patches import Rectangle
 import torch
-import torchvision
-from torchvision import transforms as T
-from torchvision.models.detection import FasterRCNN
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
-from torchvision.models.detection.rpn import AnchorGenerator
-from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
-import torch.optim as optim
-from AudioDetectionDataset import AudioDetectionData, AudioDetectionData_with_hard_negatives
+from AudioDetectionDataset import AudioDetectionData_with_hard_negatives
 from custom_collate import custom_collate
 from validation import validation
-from torchvision.ops import box_iou
 from model_functions import *
 import os
 import json
@@ -45,38 +25,35 @@ import yaml
 from datetime import datetime
 
 
-# !!! Loading file paths !!!
+# loading file paths
 
 with open('config.yaml', 'r') as file:
     config = yaml.safe_load(file)
-model_path = config['model_path']
-model_folder = config['model_folder']
-labeled_data_folder = config['labeled_data_folder']
-evaluation_folder = config['evaluation_folder']
-categories = {'D': 1, '40Hz': 2, '20Hz': 3, 'A': 4, 'B': 5}
+model_folder = config['train']['model_folder']
+labeled_data_folder = config['train']['labeled_data_folder']
+evaluation_folder = config['train']['evaluation_folder']
+categories = config['categories']
 num_classes = len(categories) + 1 # Five classes plus background
 
 
-# !!! Hyperparameters (User Input) !!!
+# !!! user input !!!
 
-model = RCNN_MobileNet_v3(num_classes)
-train_set_name = "SOCAL34N_subsample"
-val_set_name = "SOCAL34N_subsample"
+model_name = "your_model_name"
+model_constructor = RCNN_ResNet_50
+train_set_file = "train_annotations.txt"
+val_set_file = "val_annotations.txt"
 
 lr = 0.001
 momentum = 0.9
 weight_decay = 0.0005
-optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
-num_epochs = 10
+num_epochs = 30
 train_batch_size = 4
 val_batch_size = 1
 
-train_set_file = train_set_name + ".csv"
-val_set_file = val_set_name + ".csv"
 model_log = {
-    "model_name": "WMD_MobileNet_v3.2",
-    "notes": "Testing out new model constructors.",
-    "dataset": "SOCAL34N_subsample",
+    "model_name": model_name,
+    "notes": "Testing out the code",
+    "dataset": "train_annotations",
     "train_file": train_set_file,
     "val_file": val_set_file,
     "training_date": datetime.today().strftime("%Y-%m-%d"),
@@ -91,18 +68,22 @@ model_log = {
         "weight_decay": weight_decay
     }
 }
-model_name = model_log["model_name"]
+
+model = model_constructor(num_classes)
+optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+
 model_log_folder = f'{model_folder}/{model_name}'
 validation_log_folder = f'{evaluation_folder}/{model_name}'
-if(os.path.isdir(model_log_folder) or os.path.isdir(validation_log_folder)):
+if(os.path.isdir(model_log_folder)):
     raise OSError(f'Model {model_name} already exists')
 os.makedirs(model_log_folder)
-os.makedirs(validation_log_folder)
+if(not os.path.isdir(validation_log_folder)):
+    os.makedirs(validation_log_folder)
 with open(os.path.join(model_log_folder, "model_log.json"), "w") as f:
     json.dump(model_log, f, indent=4)
 
 
-# !!! Loading data !!!
+# loading data
 
 train_loader = DataLoader(AudioDetectionData_with_hard_negatives(csv_file=f'{labeled_data_folder}/{train_set_file}'),
                       batch_size=train_batch_size,
@@ -122,7 +103,7 @@ if str(device) != "cuda":
     print("Using " + str(device))
 
 
-# !!! Training loop !!!
+# training loop
 
 model_printout = "=============== TRAINING " + model_name + " ==============="
 print("=" * len(model_printout))

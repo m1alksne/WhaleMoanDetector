@@ -1,20 +1,16 @@
-# -*- coding: utf-8 -*-
 """
 Created on July 2nd 2025
 
 @author: Shane Andres
 
-# script to generate evaluation metrics after training a model.
-# note that the new training script does this automatically as it trains!
+Runs inference and generates evaluation metrics for any dataset
 
 """
 
 
-# !!! Imports !!!
-
 import torch
 from torch.utils.data import DataLoader
-from AudioDetectionDataset import AudioDetectionData, AudioDetectionData_with_hard_negatives
+from AudioDetectionDataset import AudioDetectionData_with_hard_negatives
 from custom_collate import custom_collate
 from validation import validation
 import os
@@ -22,43 +18,40 @@ import yaml
 from model_functions import *
 
 
-# !!! User input !!!
+# !!! user input !!!
 
-model_name = "WMD_MobileNet_v3.1"
-model_constructor = RCNN_MobileNet_v3
-val_set_name = "CalCOFI_200808_test"
+model_name = "your_model_name"
+model_constructor = RCNN_ResNet_50
+val_set_file = "test_annotations.txt"
 eval_epoch = 29
 iou_threshold = 0.1
 
 
-# !!! Loading file paths !!!
+# loading file paths
 
 with open('config.yaml', 'r') as file:
     config = yaml.safe_load(file)
-model_path = config['model_path']
-model_folder = config['model_folder']
-labeled_data_folder = config['labeled_data_folder']
-evaluation_folder = config['evaluation_folder']
-categories = {'D': 1, '40Hz': 2, '20Hz': 3, 'A': 4, 'B': 5}
+model_folder = config['train']['model_folder']
+labeled_data_folder = config['train']['labeled_data_folder']
+evaluation_folder = config['train']['evaluation_folder']
+categories = config['categories']
 num_classes = len(categories) + 1 # Five classes plus background
 
 
-# !!! Model architecture !!!
+# model architecture
 
 validation_log_folder = f'{evaluation_folder}/{model_name}'
 model_path = f'{model_folder}/{model_name}/{model_name}_epoch_{eval_epoch}.pth'
-if(not os.path.isdir(validation_log_folder)):
-    raise OSError(f'Model {model_name} eval folder does not exist')
 model = model_constructor(num_classes)
 
 checkpoint = torch.load(model_path, weights_only=False)
 model.load_state_dict(checkpoint['model_state_dict'])
-val_batch_size = 4
+val_batch_size = 1
 
 
-# !!! Loading data !!!
-          
-val_set_file = val_set_name + ".csv"
+# loading data
+
+val_set_name = os.path.splitext(val_set_file)[0]
 val_loader = DataLoader(AudioDetectionData_with_hard_negatives(csv_file=f'{labeled_data_folder}/{val_set_file}'),
                       batch_size=val_batch_size,
                       shuffle = False,
@@ -69,7 +62,7 @@ if str(device) != "cuda":
     print("Using " + str(device))
 
 
-# !!! Running eval !!!
+# running eval
 
 model.to(device)
 model.eval()
