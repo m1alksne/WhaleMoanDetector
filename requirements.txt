@@ -7,3 +7,4 @@ torchvision
 torchaudio
 IPython
 pyyaml
+tqdm

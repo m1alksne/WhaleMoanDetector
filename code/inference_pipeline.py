@@ -1,147 +1,80 @@
-# -*- coding: utf-8 -*-
 """
-Created on Thu Mar 28 16:41:34 2024
+Adapted from older version on August 15th 2025
 
-@author: Michaela Alksne
+@author: Michaela Alksne and Shane Andres
 
-script to run the required functions in the correct order to make predictions using trained model
+Performs inference on a dataset, and saves:
+1) Any spectrogram containing a detection inside of spectrogram_folder
+2) All detections in the model output format to 'raw_detections.txt' inside of detections_folder
+
 """
 
-import librosa
-import numpy as np
 import torch
 import os
-import torchvision
-import torchaudio
-from AudioStreamDescriptor import WAVhdr, XWAVhdr
-from PIL import Image, ImageDraw, ImageFont
-from torchvision.transforms import functional as F
-from torchvision.models.detection import FasterRCNN
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-import matplotlib.pyplot as plt
-import librosa.display
-from matplotlib.colors import Normalize
-import torch
-import pandas as pd
-import torchvision.ops as ops
-from PIL import ImageOps
-from datetime import datetime, timedelta
-from IPython.display import display
-import csv
 import yaml
-from inference_functions import extract_wav_start, chunk_audio, audio_to_spectrogram, predict_and_save_spectrograms, get_datetime, chunk_audio_from_xwav_raw_headers
-from call_context_filter import call_context_filter
+from tqdm import tqdm
+from call_context_filter import *
+from model_functions import *
+from inference_functions import *
 
-# Load the config file
+# loading file paths and settings
 with open('config.yaml', 'r') as file:
     config = yaml.safe_load(file)
-# Access the configuration variables
-wav_directory = config['wav_directory']
-txt_file_path = config['txt_file_path']
-model_path = config['model_path']
-CalCOFI_flag = config['CalCOFI_flag']
+wav_folder = config['inference']['wav_folder']
+detections_folder = config['inference']['detections_folder']
+model_folder = config['train']['model_folder']
+CalCOFI_flag = config['spectrogram']['CalCOFI_flag']
+categories = config['categories']
 
-A_thresh=0
-B_thresh=0
-D_thresh=0
-TwentyHz_thresh=0
-FourtyHz_thresh=0
+categories_rev = {v: k for k, v in categories.items()}
+num_classes = len(categories) + 1
 
-# Define spectrogram and data parameters
-fieldnames = ['wav_file_path', 'model_no', 'image_file_path', 'label', 'score',
-              'start_time_sec','end_time_sec','start_time','end_time',
-              'min_frequency', 'max_frequency','box_x1', 'box_x2', 
-              'box_y1', 'box_y2' ]
-model_name = os.path.basename(model_path)
-visualize_tf = False
-label_mapping = {'D': 1, '40Hz': 2, '20Hz': 3, 'A': 4, 'B': 5}
-inverse_label_mapping = {v: k for k, v in label_mapping.items()}
-window_size = 60
-overlap_size = 0
-time_per_pixel = 0.1  # Since hop_length = sr / 10, this simplifies to 1/10 second per pixel
 
-# Load trained Faster R-CNN model
-model = torchvision.models.detection.fasterrcnn_resnet50_fpn()
-num_classes = 6 # 5 classes plus background
-in_features = model.roi_heads.box_predictor.cls_score.in_features # classification score and number of features (1024 in this case)
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model.roi_heads.box_predictor = FastRCNNPredictor(in_features,num_classes)
-model.load_state_dict(torch.load(model_path, map_location=device))
+# !!! user input !!!
+model_name = "your_model_name"
+model_constructor = RCNN_ResNet_50      
+eval_epoch = 29
+
+model_path = f'{model_folder}/{model_name}/{model_name}_epoch_{eval_epoch}.pth'
+model = model_constructor(num_classes)
+checkpoint = torch.load(model_path, weights_only=False)
+model.load_state_dict(checkpoint['model_state_dict'])
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 model.to(device)
 model.eval()
 
 
-# Open the TXT file and write headers
-with open(txt_file_path, mode='w', encoding='utf-8') as txtfile:
-    # Write headers with tab as a delimiter
-    txtfile.write('\t'.join(fieldnames) + '\n')
+# define data parameters
+fieldnames = ['wav_file_path', 'model_no', 'image_file_path', 'label', 'score',
+              'start_time_sec','end_time_sec','start_time','end_time',
+              'min_frequency', 'max_frequency','box_x1', 'box_x2', 
+              'box_y1', 'box_y2' ]
+detections_path = os.path.join(detections_folder, 'raw_detections.txt')
+with open(detections_path, mode='w', encoding='utf-8') as detections:
+    detections.write('\t'.join(fieldnames) + '\n')
+    
 
-    # Loop over each file in the directory or subdirectory
-    for dirpath, dirnames, filenames in os.walk(wav_directory):
-        for filename in filenames:
-            if filename.endswith('.wav'):
-                # Full path to the WAV file
-                wav_file_path = os.path.join(dirpath, filename)
+# loop over each wav file in folder
+printout = "=============== RUNNING INFERENCE ==============="
+print("=" * len(printout))
+print(printout)
+print("=" * len(printout) + "\n")
 
-                # Extract the subdirectory name if it exists
-                subfolder = os.path.relpath(dirpath, wav_directory)
+for root, _, files in os.walk(wav_folder):
+    wav_files = [f for f in files if f.lower().endswith((".wav", ".x.wav"))] # filters out all non-wav files
+    for wav_file in tqdm(wav_files):
 
-                if subfolder == '.':
-                    audio_basename = os.path.splitext(filename)[0]
-                    print(audio_basename)
-                else:
-                    audio_basename = os.path.splitext(os.path.basename(wav_file_path))[0]
-                    print(audio_basename)
+        # run inference on spectrograms and save any that contain detections
+        wav_file_path = os.path.join(root, wav_file)
+        wav_file_name = os.path.splitext(wav_file)[0]
+        wav_file_name = os.path.splitext(wav_file_name)[0] # remove .x for xwav files     
+        tqdm.write(wav_file)
+        output = predict_and_save_spectrograms(wav_file_path, model, model_name, device)     
 
-                # Extract the start datetime from the WAV file
-                wav_start_time = extract_wav_start(wav_file_path)  # Ensure this returns a datetime object
-                
-                if filename.endswith('.x.wav'):
-                    xwav = XWAVhdr(wav_file_path)
-                    waveform, sr = torchaudio.load(wav_file_path)
-                    waveform = waveform.to(device)
-                    chunks, sr, chunk_start_times = chunk_audio_from_xwav_raw_headers(wav_file_path, waveform, device)
-                    is_xwav = True
-                else:
-                    chunks, sr, chunk_start_times = chunk_audio(wav_file_path, device, window_size=60, overlap_size=0)
-                    is_xwav = False
-                
-               
-                # Process each WAV file as you have in your folder
-                spectrograms = audio_to_spectrogram(chunks, sr, device)
-                # Predict on spectrograms and save images and data for positive detections
-                predictions = predict_and_save_spectrograms(
-                    spectrograms, model, CalCOFI_flag, device, txt_file_path, wav_file_path, wav_start_time,
-                    audio_basename, chunk_start_times, window_size, overlap_size,
-                    inverse_label_mapping, time_per_pixel, is_xwav, A_thresh, B_thresh, D_thresh, 
-                    TwentyHz_thresh, FourtyHz_thresh,
-                    freq_resolution=1, start_freq=10, max_freq=150)
-                
+        # write detections to TXT file
+        for detection in output:
+            # write each detection as a line in the txt file, tab-separated
+            with open(detections_path, mode='a', encoding='utf-8') as detections:
+                detections.write('\t'.join(str(detection[field]) for field in fieldnames) + '\n')
 
-                # Write event details to the TXT file
-                for event in predictions:
-                    event['wav_file_path'] = wav_file_path
-                    event['model_no'] = model_name
-                    # Write each event as a line in the txt file, tab-separated
-                    txtfile.write('\t'.join(str(event[field]) for field in fieldnames) + '\n')
-
-print('Predictions complete')
-
-print('Running call context filter')
-
-call_context_filter(txt_file_path)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+call_context_filter(detections_path)
