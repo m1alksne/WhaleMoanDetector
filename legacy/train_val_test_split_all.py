@@ -125,13 +125,34 @@ val_dataset = val_dataset[~val_dataset['spectrogram_path'].str.contains('CalCOFI
 
 train_dataset = pd.concat([train_dataset, calcofi_hard_examples])
 
-
+train_original =  pd.read_csv("N:/Michaela_working_disk_backup/WhaleMoanDetector_experiments/training_data/WhaleMoanDetector_original/WhaleMoanDetector_original_train.csv")
+test_CalCOFI_2008 = pd.read_csv("N:/Michaela_working_disk_backup/WhaleMoanDetector_experiments/test_data/CalCOFI/new_examples.txt", sep='\t')
 # Save the split datasets to CSV files in the output directory
 train_dataset.to_csv(os.path.join(output_directory_path, 'train.csv'), index=False)
 val_dataset.to_csv(os.path.join(output_directory_path, 'val.csv'), index=False)
 test_calcofi.to_csv(os.path.join(output_directory_path, 'CC200808_test.csv'), index=False)
 test_harp.to_csv(os.path.join(output_directory_path, 'SOCAL34N_test.csv'), index=False)
 # Print the counts of each label in the balanced dataset
+
+plot_histogram_with_colors(
+    data=test_CalCOFI_2008,
+    title='True and NaN Examples in CalCOFI Test (2008-08) Dataset',
+    xlabel='Labels',
+    ylabel='Count',
+    color_map=color_map,
+    save_path = os.path.join(figure_file_path, 'CalCOFI_2008_08_test.jpeg')
+)
+
+
+# Plot histogram for the train/val dataset
+plot_histogram_with_colors(
+    data=train_original,
+    title='True and NaN Examples in Original Training Dataset',
+    xlabel='Labels',
+    ylabel='Count',
+    color_map=color_map,
+    save_path = os.path.join(figure_file_path, 'train_original.jpeg')
+)
 
 # Plot histogram for the train/val dataset
 plot_histogram_with_colors(

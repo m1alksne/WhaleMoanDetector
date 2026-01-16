@@ -22,23 +22,24 @@ with open('config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 wav_folder = config['inference']['wav_folder']
 detections_folder = config['inference']['detections_folder']
-model_folder = config['train']['model_folder']
 CalCOFI_flag = config['spectrogram']['CalCOFI_flag']
 categories = config['categories']
-
+model_path = config['inference']['model_path']
+model_name = config['inference']['model_name']
+model_constructor_name = config['inference']['model_constructor']
 categories_rev = {v: k for k, v in categories.items()}
 num_classes = len(categories) + 1
 
 
-# !!! user input !!!
-model_name = "your_model_name"
-model_constructor = RCNN_ResNet_50      
-eval_epoch = 29
-
-model_path = f'{model_folder}/{model_name}/{model_name}_epoch_{eval_epoch}.pth'
-model = model_constructor(num_classes)
-checkpoint = torch.load(model_path, weights_only=False)
-model.load_state_dict(checkpoint['model_state_dict'])
+model_path = f'{model_path}/{model_name}'
+ctor = globals().get(model_constructor_name)
+if not callable(ctor):
+    raise ValueError(f"Unknown model constructor: {model_constructor_name}")
+model = ctor(num_classes)
+#model = model_constructor(num_classes)
+#checkpoint = torch.load(model_path, weights_only=False)
+#model.load_state_dict(checkpoint['model_state_dict'])
+model.load_state_dict(torch.load(model_path))
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 model.to(device)
 model.eval()

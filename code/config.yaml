@@ -2,7 +2,9 @@
 # by Michaela Alksne and Shane Andres
 
 
-categories: {'D': 1, '40Hz': 2, '20Hz': 3, 'A': 4, 'B': 5}   # Call type mappings
+categories: {'D': 1, '40Hz': 2, '20Hz': 3, 'A': 4, 'B': 5}   # User-defined call type labels and mappings
+
+# configuration of spectrograms (train or inference)
 spectrogram:
   window_size: 60
   overlap_size: 0
@@ -12,15 +14,20 @@ spectrogram:
   Hz_per_bin: 1
   CalCOFI_flag: True
 
+#configuration for training 
 train: 
-  model_folder: 'C:/path/to/your/models'                     # Where your models are stored
+  model_folder: 'C:/path/to/your/models'                     # Where your in-progress models are stored
   labeled_data_folder: 'C:/path/to/annotations'              # Where model input detections are pulled from
   evaluation_folder: 'C:/path/to/eval'                       # Where performance metrics are saved
 
+#configuration for inference
 inference:
-  wav_folder: 'C:/path/to/your/audio/files'                  # Where your .wav files are stored
-  detections_folder: 'C:/path/to/save/results'               # Where to save detection results
-  spectrogram_folder: 'C:/path/to/save/spectrograms'         # Where to save spectrogram images
+  wav_folder: 'C:/path/to/your/wav'                  # Where your .wav files are stored
+  model_name: 'WhaleMoanDetector.pth'                          # name of your pretrained model
+  model_path: 'C:/path/to/your/models'        # path to your pretrained model
+  model_constructor: 'RCNN_WMD_BEST'                                           # model architecture 
+  detections_folder: 'C:/path/to/your/detections'               # Where to save detection results
+  spectrogram_folder: 'C:/path/to/your/spectrograms' # Where to save spectrogram images
   thresholds:  {'A': 0,'B': 0,'D': 0,'20Hz': 0,'40Hz': 0}    # Score thresholds for each category
   nms_threshold: 0.05                                        # NMS threshold for predicted bounding boxes
 

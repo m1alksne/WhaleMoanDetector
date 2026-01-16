@@ -10,7 +10,7 @@ import os
 import pandas as pd
 import re
 
-#txt_file_path = "L:/WhaleMoanDetector_predictions/CalCOFI_2008/CalCOFI_2008_08/CalCOFI_2008_08_raw_detections.txt"
+#txt_file_path = "N:/Michaela_working_disk_backup/WhaleMoanDetector_experiments/results/WhaleMoanDetector_12_11_24_12_best/CalCOFI_2008_08/CalCOFI_2008_08_raw_detections.txt"
 
 def call_context_filter(txt_file_path):
     """
@@ -36,7 +36,7 @@ def call_context_filter(txt_file_path):
     df['end_time'] = pd.to_datetime(df['end_time'])
 
     # Filter by score threshold
-    df = df[df['score'] >= 0.2]
+    df = df[df['score'] >= 0.0]
         # Check if it's also a column
     # Extract sonobuoy deployment ID from wav_file_path (e.g., "SB01", "SB38")
     df['sonobuoy_id'] = df['wav_file_path'].apply(lambda x: re.search(r"(SB\d+)", x).group(1) if re.search(r"(SB\d+)", x) else "Unknown")

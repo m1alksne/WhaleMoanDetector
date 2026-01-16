@@ -43,6 +43,7 @@ def predict_and_save_spectrograms(wav_file_path, model, model_name, device):
     chunks, chunk_start_times, chunk_end_times, sr = chunk_audio(wav_file_path, device)  
     spectrograms = chunk_to_spectrogram(chunks, sr, device)
     
+    t0 = chunk_start_times[0] 
 
     output = []
     for spectrogram, chunk_start_time in list(zip(spectrograms, chunk_start_times)):
@@ -73,7 +74,7 @@ def predict_and_save_spectrograms(wav_file_path, model, model_name, device):
             if score.item() < thresholds.get(category, 0): # skips detections where score < threshold
                 continue
             elif not saved: # saves spectrograms containing at least one detection with score > threshold
-                spectrogram_file = name_spectrogram_file(wav_file_name, chunk_start_time)
+                spectrogram_file = os.path.basename(name_spectrogram_file(wav_file_name, chunk_start_time))
                 spectrogram_path = os.path.join(spectrogram_folder, spectrogram_file)
                 spectrogram_img = Image.fromarray(spectrogram.numpy())
                 spectrogram_img.save(spectrogram_path)
@@ -83,6 +84,10 @@ def predict_and_save_spectrograms(wav_file_path, model, model_name, device):
             x1, x2 = box[0].item(), box[2].item()
             y1, y2 = box[1].item(), box[3].item()
             start_offset_sec, end_offset_sec = pixel_to_time(x1), pixel_to_time(x2)
+            # absolute seconds since WAV start (t0)
+            chunk_start_sec = (chunk_start_time - t0).total_seconds()
+            start_time_sec = chunk_start_sec + start_offset_sec
+            end_time_sec   = chunk_start_sec + end_offset_sec
             start_time = chunk_start_time + timedelta(seconds=start_offset_sec)
             end_time = chunk_start_time + timedelta(seconds=end_offset_sec)
             
@@ -92,8 +97,8 @@ def predict_and_save_spectrograms(wav_file_path, model, model_name, device):
                 'image_file_path': spectrogram_path,
                 'label': category,
                 'score': round(score.item(), 2),
-                'start_time_sec': None,
-                'end_time_sec': None,
+                'start_time_sec': start_time_sec,
+                'end_time_sec': end_time_sec,
                 'start_time': start_time.strftime('%Y-%m-%d %H:%M:%S'),
                 'end_time': end_time.strftime('%Y-%m-%d %H:%M:%S'),
                 'min_frequency': pixel_to_freq(y2),

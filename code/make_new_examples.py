@@ -43,7 +43,8 @@ def make_new_examples(detections_file_path, examples_file_path="new_examples.txt
     # load detections
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     df = pd.read_csv(detections_file_path, sep='\t')
-    format_string = "%Y-%m-%d %H:%M:%S"
+    #format_string = "%Y-%m-%d %H:%M:%S"
+    format_string = "%m/%d/%Y %H:%M:%S"
     det_start_times = np.array([datetime.strptime(det_start_time, format_string) for det_start_time in df['start_time']])
     det_end_times = np.array([datetime.strptime(det_end_time, format_string) for det_end_time in df['end_time']])
     det_pr = np.array([pr for pr in df['pr']])
