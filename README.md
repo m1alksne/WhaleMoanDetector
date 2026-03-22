@@ -6,9 +6,6 @@
 
 A machine learning model for automatically detecting and classifying blue whale and fin whale calls in audio datasets.
 
-![Fin whale](https://github.com/m1alksne/WhaleMoanDetector/blob/main/figures/blue_whale.jpeg)
-*Blue whales off the coast of San Diego. Photo credit: Manuel Mendieta*
-
 ## Overview
 
 WhaleMoanDetector (WMD) is a specialized tool that identifies time and frequency bounds on whale vocalizations in audio data. It's particularly designed to detect:
