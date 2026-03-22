@@ -15,11 +15,6 @@ WhaleMoanDetector (WMD) is a specialized tool that identifies time and frequency
 
 The system uses a [Faster R-CNN](https://arxiv.org/abs/1506.01497) object detection model trained on spectrograms. The tool is designed to interface with [WhaleMoanViz](https://github.com/m1alksne/WhaleMoanViz) to create an active learning pipeline. This allows users to incrementally improve the performance of their model on unlabeled data by providing it with human feedback.
 
-This project is still in development, so please reach out with any issues or feature requests you might have!
-
-![Example spectrogram with detections](https://github.com/m1alksne/WhaleMoanDetector/blob/main/figures/all_example.JPG)
-
-
 ## Getting Started
 
 1. Download the Conda package manager with [Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/). For more information, reference the [Miniconda tutorial](https://docs.anaconda.com/working-with-conda/environments/).
